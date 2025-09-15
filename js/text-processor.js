@@ -32,14 +32,28 @@ class TextAnalyzer {
 
     static getEmptyStats() {
         return {
-            words: 0, characters: 0, sentences: 0, paragraphs: 0,
-            readingTime: 0, fleschScore: 0, gradeLevel: '—', keywords: []
+            words: 0, 
+            characters: 0, 
+            sentences: 0, 
+            paragraphs: 0,
+            readingTime: 0, 
+            fleschScore: 0, 
+            gradeLevel: '—', 
+            keywords: []
         };
     }
 
-    static getWords = (text) => text.trim().split(/\s+/).filter(Boolean);
-    static getSentences = (text) => text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-    static getParagraphs = (text) => text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+    static getWords(text) {
+        return text.trim().split(/\s+/).filter(word => word.length > 0);
+    }
+
+    static getSentences(text) {
+        return text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    }
+
+    static getParagraphs(text) {
+        return text.split(/\n\s*\n/).filter(p => p.trim().length > 0);
+    }
 
     static countSyllables(word) {
         word = word.toLowerCase();
@@ -49,8 +63,14 @@ class TextAnalyzer {
         return matches ? matches.length : 1;
     }
     
-    static calculateAvgSyllables = (words) => words.length === 0 ? 0 : words.reduce((total, word) => total + this.countSyllables(word), 0) / words.length;
-    static calculateFleschScore = (avgWords, avgSyllables) => 206.835 - (1.015 * avgWords) - (84.6 * avgSyllables);
+    static calculateAvgSyllables(words) {
+        if (words.length === 0) return 0;
+        return words.reduce((total, word) => total + this.countSyllables(word), 0) / words.length;
+    }
+
+    static calculateFleschScore(avgWords, avgSyllables) {
+        return 206.835 - (1.015 * avgWords) - (84.6 * avgSyllables);
+    }
 
     static getGradeLevel(score) {
         if (score >= 90) return '5th Grade';
@@ -63,7 +83,14 @@ class TextAnalyzer {
     }
 
     static extractKeywords(words) {
-        const stopWords = new Set(['the', 'and', 'to', 'of', 'a', 'in', 'for', 'is', 'on', 'that', 'by', 'this', 'with', 'i', 'you', 'it', 'not', 'or', 'be', 'are']);
+        const stopWords = new Set([
+            'the', 'and', 'to', 'of', 'a', 'in', 'for', 'is', 'on', 'that', 'by', 'this', 'with', 
+            'i', 'you', 'it', 'not', 'or', 'be', 'are', 'from', 'at', 'as', 'your', 'all', 'any',
+            'can', 'had', 'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his',
+            'how', 'man', 'new', 'now', 'old', 'see', 'two', 'way', 'who', 'boy', 'did', 'its',
+            'let', 'put', 'say', 'she', 'too', 'use'
+        ]);
+        
         const wordCount = {};
         words.forEach(word => {
             const cleanWord = word.toLowerCase().replace(/[^\w]/g, '');
@@ -71,7 +98,11 @@ class TextAnalyzer {
                 wordCount[cleanWord] = (wordCount[cleanWord] || 0) + 1;
             }
         });
-        return Object.entries(wordCount).sort((a, b) => b[1] - a[1]).slice(0, 7).map(([word]) => word);
+        
+        return Object.entries(wordCount)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 7)
+            .map(([word]) => word);
     }
 }
 
@@ -79,21 +110,41 @@ class TextAnalyzer {
 class TextFormatter {
     static stripFormatting(text) {
         if (!text) return '';
+        
+        // Remove HTML tags
+        text = text.replace(/<[^>]*>/g, '');
+        
+        // Decode HTML entities
         const textarea = document.createElement('textarea');
-        textarea.innerHTML = text.replace(/<[^>]*>/g, '');
+        textarea.innerHTML = text;
         text = textarea.value;
-        return text.replace(/[ \t]+/g, ' ').replace(/\n\s*\n\s*/g, '\n\n').trim();
+        
+        // Normalize whitespace
+        return text.replace(/[ \t]+/g, ' ')
+                  .replace(/\n\s*\n\s*/g, '\n\n')
+                  .trim();
     }
 
     static autoFormat(text) {
         if (!text || !text.trim()) return '';
+        
         const paragraphs = text.split(/\n\s*\n/);
-        const formatLine = (line) => line.replace(/\s+/g, ' ').trim()
-            .replace(/\s+([,.!?;:])/g, '$1')
-            .replace(/([.!?])\s*([A-Z])/g, '$1 $2')
-            .replace(/(^|[.!?]\s+)([a-z])/g, (_, p1, p2) => p1 + p2.toUpperCase())
-            .replace(/\bi\b/g, 'I');
-        return paragraphs.map(p => p.split('\n').map(formatLine).filter(Boolean).join('\n')).filter(Boolean).join('\n\n');
+        
+        const formatLine = (line) => {
+            return line.replace(/\s+/g, ' ').trim()
+                .replace(/\s+([,.!?;:])/g, '$1')
+                .replace(/([.!?])\s*([A-Z])/g, '$1 $2')
+                .replace(/(^|[.!?]\s+)([a-z])/g, (_, p1, p2) => p1 + p2.toUpperCase())
+                .replace(/\bi\b/g, 'I')
+                .replace(/\s+'/g, "'")
+                .replace(/'\s+/g, "'");
+        };
+        
+        return paragraphs
+        return paragraphs
+            .map(p => p.split('\n').map(formatLine).filter(Boolean).join('\n'))
+            .filter(Boolean)
+            .join('\n\n');
     }
 }
 
@@ -101,12 +152,22 @@ class TextFormatter {
 class CaseConverter {
     static convert(text, caseType) {
         if (!text) return '';
+        
         switch(caseType) {
-            case 'upper': return text.toUpperCase();
-            case 'lower': return text.toLowerCase();
-            case 'title': return text.replace(/\w\S*/g, txt => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase());
-            case 'sentence': return text.toLowerCase().replace(/(^|\. *)([a-z])/g, (_, p1, p2) => p1 + p2.toUpperCase());
-            default: return text;
+            case 'upper': 
+                return text.toUpperCase();
+            case 'lower': 
+                return text.toLowerCase();
+            case 'title': 
+                return text.replace(/\w\S*/g, txt => 
+                    txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
+                );
+            case 'sentence': 
+                return text.toLowerCase().replace(/(^|\. *)([a-z])/g, (_, p1, p2) => 
+                    p1 + p2.toUpperCase()
+                );
+            default: 
+                return text;
         }
     }
 }
@@ -114,37 +175,91 @@ class CaseConverter {
 // === LOREM IPSUM GENERATOR ===
 class LoremGenerator {
     static libraries = {
-        latin: ['lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 'sed', 'do', 'eiusmod', 'tempor', 'incididunt'],
-        english: ['the', 'quick', 'brown', 'fox', 'jumps', 'over', 'the', 'lazy', 'dog', 'and', 'packs', 'my', 'box', 'with', 'five', 'dozen', 'liquor', 'jugs'],
-        tech: ['algorithm', 'database', 'framework', 'application', 'interface', 'protocol', 'cloud', 'microservices', 'container', 'kubernetes', 'docker', 'api'],
-        business: ['strategy', 'growth', 'innovation', 'market', 'customer', 'revenue', 'profit', 'investment', 'portfolio', 'stakeholder', 'partnership']
+        latin: [
+            'lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 
+            'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore',
+            'magna', 'aliqua', 'enim', 'ad', 'minim', 'veniam', 'quis', 'nostrud'
+        ],
+        english: [
+            'the', 'quick', 'brown', 'fox', 'jumps', 'over', 'lazy', 'dog', 'beautiful',
+            'landscape', 'mountain', 'river', 'forest', 'sunshine', 'peaceful', 'journey',
+            'adventure', 'discover', 'explore', 'amazing', 'wonderful', 'incredible'
+        ],
+        tech: [
+            'algorithm', 'database', 'framework', 'application', 'interface', 'protocol', 
+            'cloud', 'microservices', 'container', 'kubernetes', 'docker', 'api',
+            'scalability', 'performance', 'infrastructure', 'deployment', 'optimization'
+        ],
+        business: [
+            'strategy', 'growth', 'innovation', 'market', 'customer', 'revenue', 'profit', 
+            'investment', 'portfolio', 'stakeholder', 'partnership', 'collaboration',
+            'efficiency', 'productivity', 'transformation', 'competitive', 'advantage'
+        ]
     };
 
     static generate(type, count, style) {
         const library = this.libraries[style] || this.libraries.english;
+        
         if (type === 'words') return this.generateWords(count, library);
         if (type === 'sentences') return this.generateSentences(count, library);
         return this.generateParagraphs(count, library);
     }
 
-    static generateWords = (count, lib) => Array.from({ length: count }, () => lib[Math.floor(Math.random() * lib.length)]).join(' ') + '.';
+    static generateWords(count, lib) {
+        const words = [];
+        for (let i = 0; i < count; i++) {
+            words.push(lib[Math.floor(Math.random() * lib.length)]);
+        }
+        return words.join(' ') + '.';
+    }
+
     static generateSentences(count, lib) {
         const sentences = [];
         for (let i = 0; i < count; i++) {
-            const words = this.generateWords(Math.floor(Math.random() * 10) + 5, lib);
-            sentences.push(words.charAt(0).toUpperCase() + words.slice(1));
+            const wordCount = Math.floor(Math.random() * 12) + 5;
+            const words = [];
+            for (let j = 0; j < wordCount; j++) {
+                words.push(lib[Math.floor(Math.random() * lib.length)]);
+            }
+            words[0] = words[0].charAt(0).toUpperCase() + words[0].slice(1);
+            sentences.push(words.join(' ') + '.');
         }
         return sentences.join(' ');
     }
+
     static generateParagraphs(count, lib) {
-        return Array.from({ length: count }, () => this.generateSentences(Math.floor(Math.random() * 4) + 3, lib)).join('\n\n');
+        const paragraphs = [];
+        for (let i = 0; i < count; i++) {
+            const sentenceCount = Math.floor(Math.random() * 5) + 3;
+            paragraphs.push(this.generateSentences(sentenceCount, lib));
+        }
+        return paragraphs.join('\n\n');
     }
 }
 
 // === UTILITIES ===
 class TextUtils {
     static copyToClipboard(text) {
-        return navigator.clipboard.writeText(text);
+        return navigator.clipboard.writeText(text).catch(() => {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = text;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                document.execCommand('copy');
+                return Promise.resolve();
+            } catch (err) {
+                return Promise.reject(err);
+            } finally {
+                document.body.removeChild(textArea);
+            }
+        });
     }
 
     static debounce(func, wait) {
@@ -157,5 +272,9 @@ class TextUtils {
             clearTimeout(timeout);
             timeout = setTimeout(later, wait);
         };
+    }
+
+    static formatNumber(num) {
+        return num.toLocaleString();
     }
 }
