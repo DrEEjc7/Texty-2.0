@@ -119,12 +119,11 @@ class TextFormatter {
         textarea.innerHTML = text;
         text = textarea.value;
         
-        // Normalize whitespace but PRESERVE line breaks
+        // ONLY clean up spaces/tabs, preserve ALL line breaks exactly as they are
         return text.replace(/[ \t]+/g, ' ')        // Multiple spaces/tabs → single space
-                  .replace(/\n[ \t]+/g, '\n')      // Remove spaces/tabs after line breaks
-                  .replace(/[ \t]+\n/g, '\n')      // Remove spaces/tabs before line breaks
-                  .replace(/\n{3,}/g, '\n\n')      // Multiple line breaks → double line break max
-                  .trim();
+                  .replace(/[ \t]+$/gm, '')        // Remove trailing spaces on each line
+                  .replace(/^[ \t]+/gm, '')        // Remove leading spaces on each line
+                  .trim();                         // Remove leading/trailing whitespace from entire text
     }
 
     static autoFormat(text) {
