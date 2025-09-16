@@ -119,32 +119,41 @@ class TextFormatter {
         textarea.innerHTML = text;
         text = textarea.value;
         
-        // Normalize whitespace
-        return text.replace(/[ \t]+/g, ' ')
-                  .replace(/\n\s*\n\s*/g, '\n\n')
+        // Normalize whitespace but PRESERVE line breaks
+        return text.replace(/[ \t]+/g, ' ')        // Multiple spaces/tabs → single space
+                  .replace(/\n[ \t]+/g, '\n')      // Remove spaces/tabs after line breaks
+                  .replace(/[ \t]+\n/g, '\n')      // Remove spaces/tabs before line breaks
+                  .replace(/\n{3,}/g, '\n\n')      // Multiple line breaks → double line break max
                   .trim();
     }
 
     static autoFormat(text) {
         if (!text || !text.trim()) return '';
         
+        // Split into paragraphs (double line breaks)
         const paragraphs = text.split(/\n\s*\n/);
         
         const formatLine = (line) => {
-            return line.replace(/\s+/g, ' ').trim()
-                .replace(/\s+([,.!?;:])/g, '$1')
-                .replace(/([.!?])\s*([A-Z])/g, '$1 $2')
-                .replace(/(^|[.!?]\s+)([a-z])/g, (_, p1, p2) => p1 + p2.toUpperCase())
-                .replace(/\bi\b/g, 'I')
-                .replace(/\s+'/g, "'")
-                .replace(/'\s+/g, "'");
+            return line.replace(/[ \t]+/g, ' ')                              // Multiple spaces → single space
+                      .trim()                                                // Remove leading/trailing spaces
+                      .replace(/\s+([,.!?;:])/g, '$1')                      // Remove space before punctuation
+                      .replace(/([.!?])\s*([A-Z])/g, '$1 $2')               // Ensure space after sentence ending
+                      .replace(/(^|[.!?]\s+)([a-z])/g, (_, p1, p2) => p1 + p2.toUpperCase()) // Capitalize sentences
+                      .replace(/\bi\b/g, 'I')                               // Fix lowercase "i"
+                      .replace(/\s+'/g, "'")                                // Fix apostrophes
+                      .replace(/'\s+/g, "'");
         };
         
         return paragraphs
-        return paragraphs
-            .map(p => p.split('\n').map(formatLine).filter(Boolean).join('\n'))
-            .filter(Boolean)
-            .join('\n\n');
+            .map(paragraph => {
+                // Split paragraph into lines and preserve intentional line breaks
+                const lines = paragraph.split('\n');
+                return lines
+                    .map(line => line.trim() ? formatLine(line) : '') // Format non-empty lines
+                    .join('\n');                                      // Rejoin with original line breaks
+            })
+            .filter(Boolean)     // Remove empty paragraphs
+            .join('\n\n');       // Rejoin paragraphs with double line breaks
     }
 }
 
