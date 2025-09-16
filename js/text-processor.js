@@ -48,8 +48,7 @@ class TextAnalyzer {
     }
 
     static getSentences(text) {
-        // Improved to handle multiple spaces after a sentence ender
-        return text.split(/[.!?]+\s+/).filter(s => s.trim().length > 0);
+        return text.split(/[.!?]+/).filter(s => s.trim().length > 0);
     }
 
     static getParagraphs(text) {
@@ -66,8 +65,7 @@ class TextAnalyzer {
     
     static calculateAvgSyllables(words) {
         if (words.length === 0) return 0;
-        const totalSyllables = words.reduce((total, word) => total + this.countSyllables(word), 0);
-        return totalSyllables / words.length;
+        return words.reduce((total, word) => total + this.countSyllables(word), 0) / words.length;
     }
 
     static calculateFleschScore(avgWords, avgSyllables) {
@@ -113,28 +111,35 @@ class TextFormatter {
     static stripFormatting(text) {
         if (!text) return '';
 
-        // Replace block-level tags with newlines to preserve structure
-        text = text.replace(/<(div|p|li|h[1-6]|blockquote|pre|tr|td|th)[\s>]/gi, '\n$&');
-        text = text.replace(/<\/(div|p|li|h[1-6]|blockquote|pre|tr|td|th)>/gi, '$&\n');
+        // --- Start of Final, Corrected Stripper ---
         
-        // Handle line breaks
-        text = text.replace(/<br\s*\/?>/gi, '\n');
+        // Create a temporary, invisible element to parse the HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = text;
+
+        // Replace <br> tags with a simple newline character
+        tempDiv.querySelectorAll('br').forEach(br => br.parentNode.replaceChild(document.createTextNode('\n'), br));
+
+        // Add a newline after block elements to create line breaks.
+        // This handles paragraphs, divs, list items, and headings.
+        const blockElements = 'p, div, li, h1, h2, h3, h4, h5, h6, blockquote, pre';
+        tempDiv.querySelectorAll(blockElements).forEach(block => {
+            // Only add a newline if the element is not empty
+            if (block.textContent.trim()) {
+                 block.insertAdjacentText('afterend', '\n');
+            }
+        });
         
-        // Remove all HTML tags
-        text = text.replace(/<[^>]*>/g, '');
+        // Get the text content, which now includes our manually added newlines
+        let cleanText = tempDiv.textContent || '';
         
-        // Decode HTML entities
-        const textarea = document.createElement('textarea');
-        textarea.innerHTML = text;
-        text = textarea.value;
-        
-        // MINIMAL cleanup - only fix obvious spacing issues
-        text = text.replace(/[ \t]+/g, ' ')           // Multiple spaces/tabs → single space
-                  .replace(/[ \t]*\n[ \t]*/g, '\n')   // Clean up spaces around newlines
-                  .replace(/\n{4,}/g, '\n\n\n')       // Max 3 consecutive newlines
-                  .trim();
-        
-        return text;
+        // Final cleanup of whitespace to ensure perfect formatting
+        // This removes extra blank lines created by nested block elements.
+        return cleanText
+            .replace(/\n\s*\n/g, '\n') // Collapse multiple newlines into one
+            .trim();                   // Remove any leading/trailing whitespace
+            
+        // --- End of Final, Corrected Stripper ---
     }
 
     static autoFormat(text) {
