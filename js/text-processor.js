@@ -48,7 +48,8 @@ class TextAnalyzer {
     }
 
     static getSentences(text) {
-        return text.split(/[.!?]+/).filter(s => s.trim().length > 0);
+        // Improved to handle multiple spaces after a sentence ender
+        return text.split(/[.!?]+\s+/).filter(s => s.trim().length > 0);
     }
 
     static getParagraphs(text) {
@@ -65,7 +66,8 @@ class TextAnalyzer {
     
     static calculateAvgSyllables(words) {
         if (words.length === 0) return 0;
-        return words.reduce((total, word) => total + this.countSyllables(word), 0) / words.length;
+        const totalSyllables = words.reduce((total, word) => total + this.countSyllables(word), 0);
+        return totalSyllables / words.length;
     }
 
     static calculateFleschScore(avgWords, avgSyllables) {
@@ -111,24 +113,29 @@ class TextFormatter {
     static stripFormatting(text) {
         if (!text) return '';
 
-        // Replace common block-level tags with double newlines to create paragraphs
-        text = text.replace(/<\/(p|div|h[1-6]|ul|ol|li|blockquote|pre)>/gi, '\n\n');
-        // Replace <br> tags with a single newline for line breaks
+        // --- Start of new, improved stripper ---
+
+        // Replace block-level tags with a newline. This is key for list items, divs, etc.
+        text = text.replace(/<(div|p|li|h[1-6]|blockquote|pre|tr|table)>/gi, '\n'); 
+        
+        // Handle line breaks (<br>) by replacing them with a newline character
         text = text.replace(/<br\s*\/?>/gi, '\n');
 
-        // Remove any remaining HTML tags
+        // Remove all other HTML tags
         text = text.replace(/<[^>]*>/g, '');
 
-        // Decode HTML entities (e.g., &amp; -> &)
+        // Decode HTML entities (like &nbsp; or &amp;)
         const textarea = document.createElement('textarea');
         textarea.innerHTML = text;
         text = textarea.value;
 
-        // Clean up whitespace for a tidy result
-        text = text.replace(/[ \t]+/g, ' ')          // Collapse multiple spaces/tabs to a single space
-                   .replace(/\n{3,}/g, '\n\n')       // Reduce 3 or more newlines down to 2
-                   .trim();                          // Remove any leading/trailing whitespace from the whole text
-                   
+        // Clean up whitespace for a final, tidy result
+        text = text.replace(/[ \t]+/g, ' ')        // Collapse multiple spaces/tabs to one
+                  .replace(/\n\s*\n/g, '\n\n')    // Collapse multiple newlines to a paragraph break
+                  .replace(/\n\n\s*\n/g, '\n\n')    // Ensure no more than one paragraph break
+                  .trim();                         // Trim leading/trailing whitespace
+
+        // --- End of new, improved stripper ---
         return text;
     }
 
