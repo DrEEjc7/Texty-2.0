@@ -110,20 +110,26 @@ class TextAnalyzer {
 class TextFormatter {
     static stripFormatting(text) {
         if (!text) return '';
-        
-        // Remove HTML tags
+
+        // Replace common block-level tags with double newlines to create paragraphs
+        text = text.replace(/<\/(p|div|h[1-6]|ul|ol|li|blockquote|pre)>/gi, '\n\n');
+        // Replace <br> tags with a single newline for line breaks
+        text = text.replace(/<br\s*\/?>/gi, '\n');
+
+        // Remove any remaining HTML tags
         text = text.replace(/<[^>]*>/g, '');
-        
-        // Decode HTML entities
+
+        // Decode HTML entities (e.g., &amp; -> &)
         const textarea = document.createElement('textarea');
         textarea.innerHTML = text;
         text = textarea.value;
-        
-        // ONLY clean up spaces/tabs, preserve ALL line breaks exactly as they are
-        return text.replace(/[ \t]+/g, ' ')        // Multiple spaces/tabs → single space
-                  .replace(/[ \t]+$/gm, '')        // Remove trailing spaces on each line
-                  .replace(/^[ \t]+/gm, '')        // Remove leading spaces on each line
-                  .trim();                         // Remove leading/trailing whitespace from entire text
+
+        // Clean up whitespace for a tidy result
+        text = text.replace(/[ \t]+/g, ' ')          // Collapse multiple spaces/tabs to a single space
+                   .replace(/\n{3,}/g, '\n\n')       // Reduce 3 or more newlines down to 2
+                   .trim();                          // Remove any leading/trailing whitespace from the whole text
+                   
+        return text;
     }
 
     static autoFormat(text) {
