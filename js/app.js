@@ -14,7 +14,7 @@ class TextyApp {
     init() {
         this.cacheElements();
         this.bindEvents();
-        this.setTheme(this.state.theme); // Set initial theme
+        this.setTheme(this.state.theme);
         this.setCurrentYear();
         this.generateInitialLorem();
         this.updateAnalysis();
@@ -52,32 +52,35 @@ class TextyApp {
                 TextUtils.debounce(() => this.updateAnalysis(), 250)
             );
 
-            // --- Start of new, corrected paste handler ---
+            // === IMPROVED PASTE HANDLER ===
             this.elements.textInput.addEventListener('paste', (e) => {
-                e.preventDefault(); // Stop the browser's default paste behavior
-
-                // Get the pasted text from the clipboard, preferring HTML content
-                const pastedHtml = (e.clipboardData || window.clipboardData).getData('text/html');
-                const pastedText = (e.clipboardData || window.clipboardData).getData('text/plain');
-
-                // Use our improved function to clean the text from HTML if available, otherwise use plain text
-                const cleanText = TextFormatter.stripFormatting(pastedHtml || pastedText);
-
-                // Insert the clean text into the textarea
-                // Using document.execCommand for better undo/redo support
-                if (document.execCommand('insertText', false, cleanText)) {
-                    // It worked, now we manually trigger the analysis update
+                // Don't prevent default - let browser handle paste first
+                setTimeout(() => {
+                    // Get the current content after paste
+                    const currentText = this.elements.textInput.value;
+                    
+                    // Check if we actually got HTML content from clipboard
+                    const clipboardData = e.clipboardData || window.clipboardData;
+                    const hasHtmlContent = clipboardData && clipboardData.types && 
+                                         clipboardData.types.includes('text/html');
+                    
+                    // Only process if we detect rich formatting
+                    if (hasHtmlContent) {
+                        const htmlContent = clipboardData.getData('text/html');
+                        if (htmlContent && htmlContent !== currentText) {
+                            // Strip formatting from the HTML content
+                            const cleanText = TextFormatter.stripFormatting(htmlContent);
+                            this.elements.textInput.value = cleanText;
+                            this.updateAnalysis();
+                            this.showToast('Rich formatting stripped, line breaks preserved');
+                            return;
+                        }
+                    }
+                    
+                    // For plain text or if HTML processing didn't change anything, just update analysis
                     this.updateAnalysis();
-                } else {
-                    // Fallback for browsers that don't support insertText
-                    const start = this.elements.textInput.selectionStart;
-                    const end = this.elements.textInput.selectionEnd;
-                    const text = this.elements.textInput.value;
-                    this.elements.textInput.value = text.substring(0, start) + cleanText + text.substring(end);
-                    this.updateAnalysis();
-                }
+                }, 10); // Small delay to let paste complete
             });
-            // --- End of new, corrected paste handler ---
         }
 
         // Button event listeners
@@ -145,7 +148,7 @@ class TextyApp {
         const text = this.elements.textInput?.value || '';
         const analysis = TextAnalyzer.analyze(text);
         
-        // Update statistics
+        // Update statistics efficiently
         this.updateElement('wordCount', TextUtils.formatNumber(analysis.words));
         this.updateElement('charCount', TextUtils.formatNumber(analysis.characters));
         this.updateElement('sentenceCount', TextUtils.formatNumber(analysis.sentences));
@@ -159,7 +162,7 @@ class TextyApp {
 
     updateElement(id, value) {
         const element = this.elements[id];
-        if (element) {
+        if (element && element.textContent !== value) {
             element.textContent = value;
         }
     }
@@ -183,10 +186,18 @@ class TextyApp {
         this.setButtonLoading('stripFormatBtn', true);
         
         setTimeout(() => {
-            this.elements.textInput.value = TextFormatter.stripFormatting(this.elements.textInput.value);
-            this.updateAnalysis();
+            const originalValue = this.elements.textInput.value;
+            const strippedValue = TextFormatter.stripFormatting(originalValue);
+            
+            if (originalValue !== strippedValue) {
+                this.elements.textInput.value = strippedValue;
+                this.updateAnalysis();
+                this.showToast('Formatting stripped');
+            } else {
+                this.showToast('No formatting to strip');
+            }
+            
             this.setButtonLoading('stripFormatBtn', false);
-            this.showToast('Formatting stripped');
         }, 100);
     }
 
@@ -196,19 +207,39 @@ class TextyApp {
         this.setButtonLoading('autoFormatBtn', true);
         
         setTimeout(() => {
-            this.elements.textInput.value = TextFormatter.autoFormat(this.elements.textInput.value);
-            this.updateAnalysis();
+            const originalValue = this.elements.textInput.value;
+            const formattedValue = TextFormatter.autoFormat(originalValue);
+            
+            if (originalValue !== formattedValue) {
+                this.elements.textInput.value = formattedValue;
+                this.updateAnalysis();
+                this.showToast('Text auto-formatted');
+            } else {
+                this.showToast('Text already well-formatted');
+            }
+            
             this.setButtonLoading('autoFormatBtn', false);
-            this.showToast('Text auto-formatted');
         }, 100);
     }
 
     convertCase(caseType) {
         if (!this.elements.textInput) return;
         
-        this.elements.textInput.value = CaseConverter.convert(this.elements.textInput.value, caseType);
-        this.updateAnalysis();
-        this.showToast(`Converted to ${caseType} case`);
+        const originalValue = this.elements.textInput.value;
+        if (!originalValue.trim()) {
+            this.showToast('No text to convert');
+            return;
+        }
+        
+        const convertedValue = CaseConverter.convert(originalValue, caseType);
+        
+        if (originalValue !== convertedValue) {
+            this.elements.textInput.value = convertedValue;
+            this.updateAnalysis();
+            this.showToast(`Converted to ${caseType} case`);
+        } else {
+            this.showToast(`Text already in ${caseType} case`);
+        }
     }
 
     // === LOREM GENERATOR ===
@@ -218,19 +249,25 @@ class TextyApp {
         this.setButtonLoading('generateBtn', true);
         
         setTimeout(() => {
-            const type = this.elements.loremType?.value || 'paragraphs';
-            const count = parseInt(this.elements.loremCount?.value) || 3;
-            const style = this.elements.loremStyle?.value || 'english';
-            
-            this.elements.loremOutput.value = LoremGenerator.generate(type, count, style);
-            this.setButtonLoading('generateBtn', false);
-            this.showToast('Lorem text generated');
+            try {
+                const type = this.elements.loremType?.value || 'paragraphs';
+                const count = Math.max(1, Math.min(50, parseInt(this.elements.loremCount?.value) || 3));
+                const style = this.elements.loremStyle?.value || 'english';
+                
+                this.elements.loremOutput.value = LoremGenerator.generate(type, count, style);
+                this.showToast('Lorem text generated');
+            } catch (error) {
+                console.error('Lorem generation error:', error);
+                this.showToast('Error generating lorem text');
+            } finally {
+                this.setButtonLoading('generateBtn', false);
+            }
         }, 200);
     }
     
     // === UTILITY METHODS ===
     generateInitialLorem() {
-        if (this.elements.loremOutput && !this.elements.loremOutput.value) {
+        if (this.elements.loremOutput && !this.elements.loremOutput.value.trim()) {
             this.generateLorem();
         }
     }
@@ -244,7 +281,7 @@ class TextyApp {
 
     async copyText(elementId, message = 'Copied to clipboard') {
         const element = this.elements[elementId];
-        if (!element || !element.value) {
+        if (!element || !element.value.trim()) {
             this.showToast('Nothing to copy');
             return;
         }
@@ -253,79 +290,99 @@ class TextyApp {
             await TextUtils.copyToClipboard(element.value);
             this.showToast(message);
         } catch (err) {
+            console.error('Copy failed:', err);
             this.showToast('Failed to copy');
         }
     }
 
     clearText(elementId) {
         const element = this.elements[elementId];
-        if (element) {
-            element.value = '';
-            if (elementId === 'textInput') {
-                this.updateAnalysis();
-            }
-            this.showToast('Text cleared');
+        if (!element) return;
+        
+        if (!element.value.trim()) {
+            this.showToast('Nothing to clear');
+            return;
         }
+        
+        element.value = '';
+        if (elementId === 'textInput') {
+            this.updateAnalysis();
+        }
+        this.showToast('Text cleared');
     }
 
     setButtonLoading(buttonId, loading) {
         const button = this.elements[buttonId];
-        if (button) {
-            if (loading) {
-                button.classList.add('loading');
-                button.disabled = true;
-            } else {
-                button.classList.remove('loading');
-                button.disabled = false;
-            }
+        if (!button) return;
+        
+        if (loading) {
+            button.classList.add('loading');
+            button.disabled = true;
+        } else {
+            button.classList.remove('loading');
+            button.disabled = false;
         }
     }
 
     showToast(message) {
-        if (!this.elements.toast) return;
+        if (!this.elements.toast || !message) return;
         
         const messageElement = this.elements.toast.querySelector('.toast-message');
         if (messageElement) {
             messageElement.textContent = message;
         }
         
+        // Clear any existing timeout
+        if (this.toastTimeout) {
+            clearTimeout(this.toastTimeout);
+        }
+        
         this.elements.toast.classList.add('show');
-        setTimeout(() => {
+        this.toastTimeout = setTimeout(() => {
             this.elements.toast.classList.remove('show');
         }, 2500);
     }
 
     // === KEYBOARD SHORTCUTS ===
     handleKeyboardShortcuts(e) {
+        // Only handle shortcuts when not typing in inputs
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            return;
+        }
+        
         if (e.ctrlKey || e.metaKey) {
-            switch(e.key) {
+            let handled = true;
+            
+            switch(e.key.toLowerCase()) {
                 case 'k':
-                    e.preventDefault();
                     this.clearText('textInput');
                     break;
                 case 'f':
-                    e.preventDefault();
                     this.autoFormat();
                     break;
                 case 's':
-                    e.preventDefault();
                     this.stripFormatting();
                     break;
                 case 'g':
-                    e.preventDefault();
                     this.generateLorem();
                     break;
                 case 'd':
-                    e.preventDefault();
                     this.toggleTheme();
                     break;
+                default:
+                    handled = false;
+            }
+            
+            if (handled) {
+                e.preventDefault();
             }
         }
         
         // Escape key closes toast
-        if (e.key === 'Escape') {
-            if (this.elements.toast?.classList.contains('show')) {
-                this.elements.toast.classList.remove('show');
+        if (e.key === 'Escape' && this.elements.toast?.classList.contains('show')) {
+            this.elements.toast.classList.remove('show');
+            if (this.toastTimeout) {
+                clearTimeout(this.toastTimeout);
             }
         }
     }
@@ -337,6 +394,18 @@ document.addEventListener('DOMContentLoaded', () => {
         window.textyApp = new TextyApp();
     } catch (error) {
         console.error('Failed to initialize TEXTY:', error);
+        
+        // Show user-friendly error
+        const errorDiv = document.createElement('div');
+        errorDiv.style.cssText = `
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: #ef4444; color: white; padding: 1rem 2rem;
+            border-radius: 8px; z-index: 9999; font-family: sans-serif;
+        `;
+        errorDiv.textContent = 'Failed to load TEXTY. Please refresh the page.';
+        document.body.appendChild(errorDiv);
+        
+        setTimeout(() => errorDiv.remove(), 5000);
     }
 });
 
@@ -344,14 +413,17 @@ document.addEventListener('DOMContentLoaded', () => {
 document.addEventListener('keydown', (e) => {
     if (e.key === '?' && e.shiftKey) {
         e.preventDefault();
-        alert(`TEXTY Keyboard Shortcuts:
         
-Ctrl/Cmd + K - Clear text
-Ctrl/Cmd + F - Auto format
-Ctrl/Cmd + S - Strip formatting  
-Ctrl/Cmd + G - Generate lorem
-Ctrl/Cmd + D - Toggle theme
-Shift + ? - Show this help
-Escape - Close notifications`);
+        const shortcuts = [
+            'Ctrl/Cmd + K - Clear text',
+            'Ctrl/Cmd + F - Auto format',
+            'Ctrl/Cmd + S - Strip formatting',
+            'Ctrl/Cmd + G - Generate lorem',
+            'Ctrl/Cmd + D - Toggle theme',
+            'Shift + ? - Show this help',
+            'Escape - Close notifications'
+        ];
+        
+        alert(`TEXTY Keyboard Shortcuts:\n\n${shortcuts.join('\n')}`);
     }
 });
