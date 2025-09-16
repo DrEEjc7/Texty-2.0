@@ -52,10 +52,12 @@ class TextyApp {
                 TextUtils.debounce(() => this.updateAnalysis(), 250)
             );
             
-            // Auto-format on paste
+            // Simple paste handler - only strip formatting, preserve line breaks
             this.elements.textInput.addEventListener('paste', () => {
                 setTimeout(() => {
-                    this.autoStripAndFormat();
+                    // Only strip rich formatting, don't auto-format
+                    this.elements.textInput.value = TextFormatter.stripFormatting(this.elements.textInput.value);
+                    this.updateAnalysis();
                 }, 50);
             });
         }
@@ -183,12 +185,13 @@ class TextyApp {
         }, 100);
     }
 
+    // FIXED: Only strip formatting, don't auto-format on paste
     autoStripAndFormat() {
         if (!this.elements.textInput) return;
         
         let text = this.elements.textInput.value;
         text = TextFormatter.stripFormatting(text);
-        text = TextFormatter.autoFormat(text);
+        // Don't call autoFormat() - just strip the rich formatting
         this.elements.textInput.value = text;
         this.updateAnalysis();
     }
