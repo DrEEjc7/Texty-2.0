@@ -113,29 +113,27 @@ class TextFormatter {
     static stripFormatting(text) {
         if (!text) return '';
 
-        // --- Start of new, improved stripper ---
-
-        // Replace block-level tags with a newline. This is key for list items, divs, etc.
-        text = text.replace(/<(div|p|li|h[1-6]|blockquote|pre|tr|table)>/gi, '\n'); 
+        // Replace block-level tags with newlines to preserve structure
+        text = text.replace(/<(div|p|li|h[1-6]|blockquote|pre|tr|td|th)[\s>]/gi, '\n$&');
+        text = text.replace(/<\/(div|p|li|h[1-6]|blockquote|pre|tr|td|th)>/gi, '$&\n');
         
-        // Handle line breaks (<br>) by replacing them with a newline character
+        // Handle line breaks
         text = text.replace(/<br\s*\/?>/gi, '\n');
-
-        // Remove all other HTML tags
+        
+        // Remove all HTML tags
         text = text.replace(/<[^>]*>/g, '');
-
-        // Decode HTML entities (like &nbsp; or &amp;)
+        
+        // Decode HTML entities
         const textarea = document.createElement('textarea');
         textarea.innerHTML = text;
         text = textarea.value;
-
-        // Clean up whitespace for a final, tidy result
-        text = text.replace(/[ \t]+/g, ' ')        // Collapse multiple spaces/tabs to one
-                  .replace(/\n\s*\n/g, '\n\n')    // Collapse multiple newlines to a paragraph break
-                  .replace(/\n\n\s*\n/g, '\n\n')    // Ensure no more than one paragraph break
-                  .trim();                         // Trim leading/trailing whitespace
-
-        // --- End of new, improved stripper ---
+        
+        // MINIMAL cleanup - only fix obvious spacing issues
+        text = text.replace(/[ \t]+/g, ' ')           // Multiple spaces/tabs → single space
+                  .replace(/[ \t]*\n[ \t]*/g, '\n')   // Clean up spaces around newlines
+                  .replace(/\n{4,}/g, '\n\n\n')       // Max 3 consecutive newlines
+                  .trim();
+        
         return text;
     }
 
