@@ -48,18 +48,36 @@ class TextyApp {
     bindEvents() {
         // Text input with debounced analysis
         if (this.elements.textInput) {
-            this.elements.textInput.addEventListener('input', 
+            this.elements.textInput.addEventListener('input',
                 TextUtils.debounce(() => this.updateAnalysis(), 250)
             );
-            
-            // Simple paste handler - only strip formatting, preserve line breaks
-            this.elements.textInput.addEventListener('paste', () => {
-                setTimeout(() => {
-                    // Only strip rich formatting, don't auto-format
-                    this.elements.textInput.value = TextFormatter.stripFormatting(this.elements.textInput.value);
+
+            // --- Start of new, corrected paste handler ---
+            this.elements.textInput.addEventListener('paste', (e) => {
+                e.preventDefault(); // Stop the browser's default paste behavior
+
+                // Get the pasted text from the clipboard, preferring HTML content
+                const pastedHtml = (e.clipboardData || window.clipboardData).getData('text/html');
+                const pastedText = (e.clipboardData || window.clipboardData).getData('text/plain');
+
+                // Use our improved function to clean the text from HTML if available, otherwise use plain text
+                const cleanText = TextFormatter.stripFormatting(pastedHtml || pastedText);
+
+                // Insert the clean text into the textarea
+                // Using document.execCommand for better undo/redo support
+                if (document.execCommand('insertText', false, cleanText)) {
+                    // It worked, now we manually trigger the analysis update
                     this.updateAnalysis();
-                }, 50);
+                } else {
+                    // Fallback for browsers that don't support insertText
+                    const start = this.elements.textInput.selectionStart;
+                    const end = this.elements.textInput.selectionEnd;
+                    const text = this.elements.textInput.value;
+                    this.elements.textInput.value = text.substring(0, start) + cleanText + text.substring(end);
+                    this.updateAnalysis();
+                }
             });
+            // --- End of new, corrected paste handler ---
         }
 
         // Button event listeners
@@ -183,17 +201,6 @@ class TextyApp {
             this.setButtonLoading('autoFormatBtn', false);
             this.showToast('Text auto-formatted');
         }, 100);
-    }
-
-    // FIXED: Only strip formatting, don't auto-format on paste
-    autoStripAndFormat() {
-        if (!this.elements.textInput) return;
-        
-        let text = this.elements.textInput.value;
-        text = TextFormatter.stripFormatting(text);
-        // Don't call autoFormat() - just strip the rich formatting
-        this.elements.textInput.value = text;
-        this.updateAnalysis();
     }
 
     convertCase(caseType) {
