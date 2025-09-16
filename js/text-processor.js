@@ -108,66 +108,79 @@ class TextAnalyzer {
 
 // === TEXT FORMATTING ===
 class TextFormatter {
-    
-static stripFormatting(text) {
-    if (!text) return '';
+    static stripFormatting(text) {
+        if (!text) return '';
 
-    // Create a temporary, invisible element to parse the HTML
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = text;
-
-    // Replace <br> tags with a newline character
-    tempDiv.querySelectorAll('br').forEach(br => {
-        br.parentNode.replaceChild(document.createTextNode('\n'), br);
-    });
-
-    // Add a newline after block elements to preserve structure
-    const blockElements = 'p, div, li, h1, h2, h3, h4, h5, h6, blockquote, pre';
-    tempDiv.querySelectorAll(blockElements).forEach(block => {
-        if (block.textContent.trim()) {
-            block.insertAdjacentText('afterend', '\n');
+        // Handle plain text input (no HTML)
+        if (!text.includes('<')) {
+            return text.replace(/[ \t]+/g, ' ')  // Clean up multiple spaces
+                      .replace(/[ \t]*\n[ \t]*/g, '\n')  // Clean spaces around newlines
+                      .trim();
         }
-    });
-    
-    // Get the text content with our manually added newlines
-    let cleanText = tempDiv.textContent || '';
-    
-    // MINIMAL cleanup - only remove excessive blank lines (3+ in a row)
-    return cleanText
-        .replace(/[ \t]+/g, ' ')        // Multiple spaces/tabs → single space
-        .replace(/\n{3,}/g, '\n\n')     // Only collapse 3+ newlines to 2 newlines
-        .trim();      
-    
-        // --- End of Final, Corrected Stripper ---
+
+        // === HTML PROCESSING ===
+        
+        // Step 1: Normalize common HTML patterns before parsing
+        text = text
+            // Convert <br> tags to newlines
+            .replace(/<br\s*\/?>/gi, '\n')
+            // Convert </p><p> to paragraph breaks
+            .replace(/<\/p>\s*<p[^>]*>/gi, '\n\n')
+            // Convert list items to newlines
+            .replace(/<li[^>]*>/gi, '\n• ')
+            .replace(/<\/li>/gi, '')
+            // Convert div endings to newlines
+            .replace(/<\/div>/gi, '\n')
+            // Convert heading endings to newlines
+            .replace(/<\/h[1-6]>/gi, '\n');
+
+        // Step 2: Create DOM element to properly parse remaining HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = text;
+
+        // Step 3: Extract text content
+        let cleanText = tempDiv.textContent || tempDiv.innerText || '';
+
+        // Step 4: Final cleanup - preserve line structure while cleaning whitespace
+        cleanText = cleanText
+            // Clean up spaces but preserve line breaks
+            .replace(/[ \t]+/g, ' ')           // Multiple spaces/tabs → single space
+            .replace(/[ \t]*\n[ \t]*/g, '\n')  // Remove spaces around newlines
+            .replace(/\n{4,}/g, '\n\n\n')      // Limit to max 3 consecutive newlines
+            .trim();                           // Remove leading/trailing whitespace
+
+        return cleanText;
     }
 
     static autoFormat(text) {
         if (!text || !text.trim()) return '';
         
-        // Split into paragraphs (double line breaks)
+        // Split by double+ newlines to identify paragraphs
         const paragraphs = text.split(/\n\s*\n/);
         
         const formatLine = (line) => {
-            return line.replace(/[ \t]+/g, ' ')                              // Multiple spaces → single space
-                      .trim()                                                // Remove leading/trailing spaces
-                      .replace(/\s+([,.!?;:])/g, '$1')                      // Remove space before punctuation
-                      .replace(/([.!?])\s*([A-Z])/g, '$1 $2')               // Ensure space after sentence ending
-                      .replace(/(^|[.!?]\s+)([a-z])/g, (_, p1, p2) => p1 + p2.toUpperCase()) // Capitalize sentences
-                      .replace(/\bi\b/g, 'I')                               // Fix lowercase "i"
-                      .replace(/\s+'/g, "'")                                // Fix apostrophes
-                      .replace(/'\s+/g, "'");
+            return line
+                .replace(/[ \t]+/g, ' ')                              // Multiple spaces → single space
+                .trim()                                                // Remove leading/trailing spaces
+                .replace(/\s+([,.!?;:])/g, '$1')                      // Remove space before punctuation
+                .replace(/([.!?])\s*([A-Z])/g, '$1 $2')               // Ensure space after sentence ending
+                .replace(/(^|[.!?]\s+)([a-z])/g, (_, p1, p2) => p1 + p2.toUpperCase()) // Capitalize sentences
+                .replace(/\bi\b/g, 'I')                               // Fix lowercase "i"
+                .replace(/\s+'/g, "'")                                // Fix apostrophes
+                .replace(/'\s+/g, "'");
         };
         
         return paragraphs
             .map(paragraph => {
-                // Split paragraph into lines and preserve intentional line breaks
+                // Handle single lines within paragraphs
                 const lines = paragraph.split('\n');
                 return lines
                     .map(line => line.trim() ? formatLine(line) : '') // Format non-empty lines
-                    .join('\n');                                      // Rejoin with original line breaks
+                    .filter(line => line !== '')                      // Remove empty lines
+                    .join('\n');                                       // Rejoin with newlines
             })
             .filter(Boolean)     // Remove empty paragraphs
-            .join('\n\n');       // Rejoin paragraphs with double line breaks
+            .join('\n\n');       // Rejoin paragraphs with double newlines
     }
 }
 
@@ -186,7 +199,7 @@ class CaseConverter {
                     txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase()
                 );
             case 'sentence': 
-                return text.toLowerCase().replace(/(^|\. *)([a-z])/g, (_, p1, p2) => 
+                return text.toLowerCase().replace(/(^|[.!?]\s+)([a-z])/g, (_, p1, p2) => 
                     p1 + p2.toUpperCase()
                 );
             default: 
