@@ -108,37 +108,36 @@ class TextAnalyzer {
 
 // === TEXT FORMATTING ===
 class TextFormatter {
-    static stripFormatting(text) {
-        if (!text) return '';
+    
+static stripFormatting(text) {
+    if (!text) return '';
 
-        // --- Start of Final, Corrected Stripper ---
-        
-        // Create a temporary, invisible element to parse the HTML
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = text;
+    // Create a temporary, invisible element to parse the HTML
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = text;
 
-        // Replace <br> tags with a simple newline character
-        tempDiv.querySelectorAll('br').forEach(br => br.parentNode.replaceChild(document.createTextNode('\n'), br));
+    // Replace <br> tags with a newline character
+    tempDiv.querySelectorAll('br').forEach(br => {
+        br.parentNode.replaceChild(document.createTextNode('\n'), br);
+    });
 
-        // Add a newline after block elements to create line breaks.
-        // This handles paragraphs, divs, list items, and headings.
-        const blockElements = 'p, div, li, h1, h2, h3, h4, h5, h6, blockquote, pre';
-        tempDiv.querySelectorAll(blockElements).forEach(block => {
-            // Only add a newline if the element is not empty
-            if (block.textContent.trim()) {
-                 block.insertAdjacentText('afterend', '\n');
-            }
-        });
-        
-        // Get the text content, which now includes our manually added newlines
-        let cleanText = tempDiv.textContent || '';
-        
-        // Final cleanup of whitespace to ensure perfect formatting
-        // This removes extra blank lines created by nested block elements.
-        return cleanText
-            .replace(/\n\s*\n/g, '\n') // Collapse multiple newlines into one
-            .trim();                   // Remove any leading/trailing whitespace
-            
+    // Add a newline after block elements to preserve structure
+    const blockElements = 'p, div, li, h1, h2, h3, h4, h5, h6, blockquote, pre';
+    tempDiv.querySelectorAll(blockElements).forEach(block => {
+        if (block.textContent.trim()) {
+            block.insertAdjacentText('afterend', '\n');
+        }
+    });
+    
+    // Get the text content with our manually added newlines
+    let cleanText = tempDiv.textContent || '';
+    
+    // MINIMAL cleanup - only remove excessive blank lines (3+ in a row)
+    return cleanText
+        .replace(/[ \t]+/g, ' ')        // Multiple spaces/tabs → single space
+        .replace(/\n{3,}/g, '\n\n')     // Only collapse 3+ newlines to 2 newlines
+        .trim();      
+    
         // --- End of Final, Corrected Stripper ---
     }
 
