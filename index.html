@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TEXTY - Modern Text Processor</title>
+    <title>TEXTY — Smart Text Processor</title>
+    <meta name="description" content="Clean, format, and analyse your text with powerful one-click transforms. Select any portion to apply transforms only to that text.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -11,119 +12,346 @@
     <link rel="stylesheet" href="css/main.css">
 </head>
 <body>
-    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
-        <!-- Icon will be injected by JavaScript -->
-    </button>
+
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme"></button>
 
     <main class="main">
-        <section class="tool-section">
-            <div class="section-header">
-                <h1 class="brand-title">TEXT PROCESSOR</h1>
-                <p class="brand-subtitle">Clean, format, and transform your text instantly</p>
-            </div>
 
-            <div class="button-group-toolbar">
-                <button class="btn btn-outline" id="stripFormatBtn">Strip Formatting</button>
-                <button class="btn btn-outline" id="autoFormatBtn">Auto Format</button>
-                <button class="btn btn-case" data-case="sentence">Sentence case</button>
-                <button class="btn btn-case" data-case="lower">lower case</button>
-                <button class="btn btn-case" data-case="upper">UPPER CASE</button>
-                <button class="btn btn-case" data-case="title">Title Case</button>
-            </div>
-            
-            <textarea
-                id="textInput"
-                class="text-area primary-textarea"
-                placeholder="Paste your text here to get started..."></textarea>
+        <!-- ── HEADER ──────────────────────────────────── -->
+        <div class="section-header">
+            <h1 class="brand-title">TEXT PROCESSOR</h1>
+            <p class="brand-subtitle">Clean, format, and transform your text instantly &middot; Select any portion to apply transforms only to that text</p>
+        </div>
 
-            <div class="button-group">
-                <button class="btn btn-outline" id="copyTextBtn">Copy Text</button>
-                <button class="btn btn-outline" id="clearTextBtn">Clear Text</button>
-                <button class="btn btn-outline" id="exportTextBtn">Export as TXT</button>
-            </div>
+        <!-- ── TOOLBAR ──────────────────────────────────── -->
+        <div class="toolbar">
 
-            <div class="stats-container">
-                <div class="stat-item"><span id="wordCount">0</span> Words</div>
-                <div class="stat-item"><span id="uniqueWords">0</span> Unique Words</div>
-                <div class="stat-item"><span id="charCount">0</span> Characters</div>
-                <div class="stat-item"><span id="sentenceCount">0</span> Sentences</div>
-                <div class="stat-item"><span id="paragraphCount">0</span> Paragraphs</div>
-                <div class="stat-item"><span id="avgWordLength">—</span> Avg Word Length</div>
-                <div class="stat-item"><span id="readingTime">0m</span> Read Time</div>
-                <div class="stat-item"><span id="gradeLevel">—</span> Grade Level</div>
-                <div class="stat-item"><span id="readabilityScore">—</span> Readability Score</div>
-            </div>
+            <div class="toolbar-group">
+                <span class="toolbar-group-label">Format</span>
+                <div class="toolbar-buttons">
 
-            <div class="keywords-section">
-                <h3 class="section-title">Top Keywords</h3>
-                <div class="keywords-list" id="keywordsList">
-                    <span class="no-keywords">Start typing to see keywords...</span>
+                    <button class="btn btn-tool" id="stripFormatBtn"
+                        title="Remove HTML tags, extra spaces and line breaks">
+                        <span class="btn-label">Strip</span>
+                        <span class="btn-desc">Remove formatting</span>
+                    </button>
+
+                    <button class="btn btn-tool" id="removeDupesBtn"
+                        title="Remove duplicate lines, keeping the first occurrence">
+                        <span class="btn-label">Remove Dupes</span>
+                        <span class="btn-desc">Delete duplicate lines</span>
+                    </button>
+
+                    <button class="btn btn-tool" id="smartQuotesBtn"
+                        title="Toggle between straight quotes and curly (typographic) quotes">
+                        <span class="btn-label">Smart Quotes</span>
+                        <span class="btn-desc">Straight &harr; Curly</span>
+                    </button>
+
+                    <button class="btn btn-tool" id="findReplaceToggleBtn"
+                        title="Open Find &amp; Replace panel (Ctrl+H)">
+                        <span class="btn-label">Find &amp; Replace</span>
+                        <span class="btn-desc">Search &amp; substitute</span>
+                    </button>
+
                 </div>
             </div>
 
-            <div class="formatting-section" id="formattingSection" style="display: none;">
-                <h3 class="section-title">Formatting Detected</h3>
-                <div class="formatting-list" id="formattingList">
-                    <!-- Formatting information will be injected here -->
+            <div class="toolbar-divider"></div>
+
+            <div class="toolbar-group">
+                <span class="toolbar-group-label">Spacing</span>
+                <div class="toolbar-buttons">
+
+                    <button class="btn btn-tool" id="sentLineBtn"
+                        title="Put each sentence on its own line — great for proofreading">
+                        <span class="btn-label">Sent → Line</span>
+                        <span class="btn-desc">Each sentence on new line</span>
+                    </button>
+
+                    <button class="btn btn-tool" id="joinLinesBtn"
+                        title="Merge hard-wrapped lines back into paragraphs — fixes PDF copy-paste">
+                        <span class="btn-label">Join Lines</span>
+                        <span class="btn-desc">Merge hard line breaks</span>
+                    </button>
+
+                    <button class="btn btn-tool" id="collapseSpacesBtn"
+                        title="Replace multiple consecutive spaces and tabs with a single space">
+                        <span class="btn-label">Collapse Spaces</span>
+                        <span class="btn-desc">Multiple spaces → one</span>
+                    </button>
+
+                    <button class="btn btn-tool" id="collapseBreaksBtn"
+                        title="Collapse 3 or more consecutive blank lines down to one">
+                        <span class="btn-label">Collapse Breaks</span>
+                        <span class="btn-desc">Multiple blanks → one</span>
+                    </button>
+
                 </div>
             </div>
-        </section>
 
-        <section class="tool-section">
-            <div class="section-header">
-                <h1 class="brand-title">LOREM IPSUM GENERATOR</h1>
-                <p class="brand-subtitle">Generate placeholder text in multiple ways</p>
+            <div class="toolbar-divider"></div>
+
+            <div class="toolbar-group">
+                <span class="toolbar-group-label">Case</span>
+                <div class="toolbar-buttons">
+
+                    <button class="btn btn-tool btn-case" data-case="sentence"
+                        title="Capitalise the first letter of each sentence">
+                        <span class="btn-label">Sentence</span>
+                        <span class="btn-desc">First letter caps</span>
+                    </button>
+
+                    <button class="btn btn-tool btn-case" data-case="lower"
+                        title="Convert all text to lowercase">
+                        <span class="btn-label">lowercase</span>
+                        <span class="btn-desc">All letters lower</span>
+                    </button>
+
+                    <button class="btn btn-tool btn-case" data-case="upper"
+                        title="Convert all text to uppercase">
+                        <span class="btn-label">UPPERCASE</span>
+                        <span class="btn-desc">All letters upper</span>
+                    </button>
+
+                    <button class="btn btn-tool btn-case" data-case="title"
+                        title="Capitalise the first letter of each word">
+                        <span class="btn-label">Title Case</span>
+                        <span class="btn-desc">Each word capped</span>
+                    </button>
+
+                </div>
             </div>
 
-            <div class="form-row">
-                <div class="form-field">
-                    <label for="loremType" class="form-label">Type</label>
-                    <select id="loremType" class="form-select">
-                        <option value="paragraphs">Paragraphs</option>
-                        <option value="sentences">Sentences</option>
-                        <option value="words">Words</option>
+        </div><!-- /.toolbar -->
+
+        <!-- ── FIND & REPLACE PANEL ─────────────────────── -->
+        <div class="find-replace-panel" id="findReplacePanel" aria-hidden="true">
+
+            <div class="find-replace-fields">
+                <div class="find-replace-field">
+                    <label class="find-replace-label" for="findInput">Find</label>
+                    <input type="text" id="findInput" class="find-input"
+                        placeholder="Search text&hellip;" autocomplete="off" spellcheck="false">
+                </div>
+                <div class="find-replace-field">
+                    <label class="find-replace-label" for="replaceInput">Replace with</label>
+                    <input type="text" id="replaceInput" class="find-input"
+                        placeholder="Replacement&hellip;" autocomplete="off" spellcheck="false">
+                </div>
+            </div>
+
+            <div class="find-replace-footer">
+                <div class="find-replace-options">
+                    <label class="find-option">
+                        <input type="checkbox" id="matchCaseOpt"> Match case
+                    </label>
+                    <label class="find-option">
+                        <input type="checkbox" id="wholeWordOpt"> Whole word
+                    </label>
+                    <label class="find-option">
+                        <input type="checkbox" id="regexOpt"> Regex
+                    </label>
+                    <span class="find-results-count" id="findResultsCount"></span>
+                </div>
+                <div class="find-replace-actions">
+                    <button class="btn btn-sm btn-outline" id="findPrevBtn">&#8593; Prev</button>
+                    <button class="btn btn-sm btn-outline" id="findNextBtn">&#8595; Next</button>
+                    <button class="btn btn-sm btn-outline" id="replaceOneBtn">Replace</button>
+                    <button class="btn btn-sm btn-primary" id="replaceAllBtn">Replace All</button>
+                    <button class="btn btn-sm btn-outline find-close-btn" id="findCloseBtn">&#x2715;</button>
+                </div>
+            </div>
+
+        </div><!-- /.find-replace-panel -->
+
+        <!-- ── TEXTAREA ──────────────────────────────────── -->
+        <textarea
+            id="textInput"
+            class="text-area primary-textarea"
+            maxlength="100000"
+            placeholder="Paste or type your text here&#10;&#10;Tip: select any portion first, then click a transform button to apply it only to that text."></textarea>
+
+        <!-- ── ACTION BAR ────────────────────────────────── -->
+        <div class="action-bar">
+            <div class="action-bar-left">
+                <button class="btn btn-outline" id="copyTextBtn">Copy</button>
+                <button class="btn btn-outline" id="clearTextBtn">Clear</button>
+                <button class="btn btn-outline" id="exportTextBtn">Export .txt</button>
+                <button class="btn btn-outline" id="exportMdBtn">Export .md</button>
+            </div>
+            <div class="action-bar-right">
+                <button class="btn btn-outline" id="undoBtn" disabled
+                    title="Undo last transform (Ctrl+Z)">&#x21A9; Undo</button>
+            </div>
+        </div>
+
+        <!-- ── WRITING LIMIT TRACKER ─────────────────────── -->
+        <div class="limit-tracker" id="limitTracker">
+            <div class="limit-tracker-controls">
+                <span class="limit-label">Limit</span>
+                <div class="limit-presets">
+                    <button class="preset-btn" data-preset="280" data-type="chars">𝕏 Tweet</button>
+                    <button class="preset-btn" data-preset="2200" data-type="chars">IG Caption</button>
+                    <button class="preset-btn" data-preset="3000" data-type="chars">LinkedIn</button>
+                    <button class="preset-btn" data-preset="160" data-type="chars">Meta Desc</button>
+                    <button class="preset-btn" data-preset="5000" data-type="chars">YT Desc</button>
+                </div>
+                <div class="limit-custom">
+                    <input type="number" id="limitInput" class="limit-input"
+                        placeholder="Custom&hellip;" min="1" max="999999">
+                    <select id="limitTypeSelect" class="limit-type-select">
+                        <option value="chars">chars</option>
+                        <option value="words">words</option>
                     </select>
                 </div>
-                <div class="form-field">
-                    <label for="loremCount" class="form-label">Count</label>
-                    <input type="number" id="loremCount" class="form-input" value="3" min="1" max="50">
-                </div>
-                <div class="form-field">
-                    <label for="loremStyle" class="form-label">Style</label>
-                    <select id="loremStyle" class="form-select">
-                        <option value="latin">Latin</option>
-                        <option value="english" selected>English</option>
-                        <option value="tech">Tech</option>
-                        <option value="business">Business</option>
-                    </select>
-                </div>
+                <button class="limit-clear-btn" id="limitClearBtn" title="Clear limit">&times;</button>
             </div>
-            
-            <textarea 
-                id="loremOutput" 
-                class="text-area" 
-                placeholder="Generated text will appear here..."
-                rows="8"
-                readonly></textarea>
-            
-            <div class="button-group">
-                <button class="btn btn-primary" id="generateBtn">Generate</button>
-                <button class="btn btn-outline" id="copyLoremBtn">Copy</button>
-                <button class="btn btn-outline" id="clearLoremBtn">Clear</button>
+            <div class="limit-bar-wrap" id="limitBarWrap">
+                <div class="limit-bar-track">
+                    <div class="limit-bar-fill" id="limitBarFill"></div>
+                </div>
+                <span class="limit-counter" id="limitCounter"></span>
             </div>
-        </section>
+        </div>
+
+        <!-- ── ANALYTICS PANEL ───────────────────────────── -->
+        <div class="analytics-panel" id="analyticsPanel">
+
+            <div class="analytics-tabs" role="tablist">
+                <button class="analytics-tab active"
+                    id="statsTabBtn" role="tab"
+                    aria-selected="true" aria-controls="statsPanel">
+                    Stats
+                </button>
+                <button class="analytics-tab"
+                    id="formattingTabBtn" role="tab"
+                    aria-selected="false" aria-controls="formattingPanel">
+                    Paste Formatting
+                    <span class="tab-badge" id="formattingBadge" hidden></span>
+                </button>
+            </div>
+
+            <!-- Stats Tab -->
+            <div class="analytics-content" id="statsPanel"
+                role="tabpanel" aria-labelledby="statsTabBtn">
+
+                <div class="stats-container">
+                    <div class="stat-item" id="statWords" title="Click to copy">
+                        <span class="stat-value" id="wordCount">0</span>
+                        <span class="stat-label">Words</span>
+                    </div>
+                    <div class="stat-item" id="statUnique" title="Click to copy">
+                        <span class="stat-value" id="uniqueWords">0</span>
+                        <span class="stat-label">Unique Words</span>
+                    </div>
+                    <div class="stat-item" id="statChars" title="Click to copy">
+                        <span class="stat-value" id="charCount">0</span>
+                        <span class="stat-label">Characters</span>
+                    </div>
+                    <div class="stat-item" id="statSentences" title="Click to copy">
+                        <span class="stat-value" id="sentenceCount">0</span>
+                        <span class="stat-label">Sentences</span>
+                    </div>
+                    <div class="stat-item" id="statParagraphs" title="Click to copy">
+                        <span class="stat-value" id="paragraphCount">0</span>
+                        <span class="stat-label">Paragraphs</span>
+                    </div>
+                    <div class="stat-item" id="statAvgWord" title="Click to copy">
+                        <span class="stat-value" id="avgWordLength">&mdash;</span>
+                        <span class="stat-label">Avg Word Len</span>
+                    </div>
+                    <div class="stat-item" id="statReadTime" title="Click to copy">
+                        <span class="stat-value"><span id="readingTime">0</span></span>
+                        <span class="stat-label">Read Time (min)</span>
+                    </div>
+                    <div class="stat-item" id="statReadability" title="Click to copy">
+                        <span class="stat-value" id="readabilityScore">&mdash;</span>
+                        <span class="stat-label">Readability</span>
+                    </div>
+                </div>
+
+                <div class="keywords-section">
+                    <h3 class="section-title">Top Keywords</h3>
+                    <div class="keywords-list" id="keywordsList">
+                        <span class="no-keywords">Start typing to see keywords&hellip;</span>
+                    </div>
+                </div>
+
+            </div><!-- /#statsPanel -->
+
+            <!-- Formatting Tab -->
+            <div class="analytics-content hidden" id="formattingPanel"
+                role="tabpanel" aria-labelledby="formattingTabBtn">
+                <div class="formatting-empty" id="formattingEmpty">
+                    <p>Paste rich text to see what formatting was detected and stripped.</p>
+                </div>
+                <div class="formatting-list" id="formattingList"></div>
+            </div><!-- /#formattingPanel -->
+
+        </div><!-- /.analytics-panel -->
+
     </main>
 
     <footer class="footer">
-        <div class="container">
+        <div class="footer-inner">
             <p class="footer-text">
-                Copyright © <span id="currentYear"></span> • Designed with ❤️ by <a href="https://dee7studio.com" target="_blank" class="footer-link">Dee7 Studio</a>
+                Copyright &copy; <span id="currentYear"></span> &middot; Designed with &#10084;&#65039; by
+                <a href="https://dee7studio.com" target="_blank" rel="noopener" class="footer-link">Dee7 Studio</a>
             </p>
+            <button class="shortcuts-hint" id="shortcutsHintBtn" title="View keyboard shortcuts">
+                Shortcuts <kbd>&#8679;?</kbd>
+            </button>
         </div>
     </footer>
 
-    <div class="toast" id="toast">
+    <!-- Toast -->
+    <div class="toast" id="toast" role="status" aria-live="polite">
         <span class="toast-message"></span>
+    </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div class="modal-overlay" id="shortcutsModal" aria-hidden="true">
+        <div class="modal" role="dialog" aria-label="Keyboard shortcuts">
+            <div class="modal-header">
+                <h2 class="modal-title">Keyboard Shortcuts</h2>
+                <button class="modal-close" id="shortcutsModalClose" aria-label="Close">&#x2715;</button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcut-row">
+                    <kbd>Ctrl / &#8984; + Shift + C</kbd>
+                    <span>Copy text</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Ctrl / &#8984; + Shift + E</kbd>
+                    <span>Export as .txt</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Ctrl / &#8984; + Shift + L</kbd>
+                    <span>Clear text</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Ctrl / &#8984; + H</kbd>
+                    <span>Find &amp; Replace</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Ctrl / &#8984; + Z</kbd>
+                    <span>Undo last transform</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Enter</kbd>
+                    <span>Find next (in Find panel)</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Shift + ?</kbd>
+                    <span>Show this panel</span>
+                </div>
+                <div class="shortcut-row">
+                    <kbd>Escape</kbd>
+                    <span>Close panels / dismiss</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script src="js/text-processor.js"></script>
