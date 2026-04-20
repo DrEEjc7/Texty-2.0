@@ -20,13 +20,11 @@ class TextAnalyzer {
         const wordCount  = words.length;
 
         let fleschScore = 0;
-        let gradeLevel  = '—';
 
         if (wordCount > 10 && sentences.length > 0) {
-            const avgWordsPerSentence  = wordCount / sentences.length;
-            const avgSyllablesPerWord  = this.calculateAvgSyllables(words);
+            const avgWordsPerSentence = wordCount / sentences.length;
+            const avgSyllablesPerWord = this.calculateAvgSyllables(words);
             fleschScore = this.calculateFleschScore(avgWordsPerSentence, avgSyllablesPerWord);
-            gradeLevel  = this.getGradeLevel(fleschScore);
         }
 
         const readingTime = this.calculateReadingTime(wordCount);
@@ -36,16 +34,15 @@ class TextAnalyzer {
             : '—';
 
         return {
-            words:          wordCount,
+            words:        wordCount,
             uniqueWords,
             characters,
-            sentences:      sentences.length,
-            paragraphs:     paragraphs.length,
+            sentences:    sentences.length,
+            paragraphs:   paragraphs.length,
             avgWordLength,
             readingTime,
-            fleschScore:    Math.round(fleschScore),
-            gradeLevel,
-            keywords:       wordCount > 20 ? this.extractKeywords(words) : []
+            fleschScore:  Math.round(fleschScore),
+            keywords:     wordCount > 20 ? this.extractKeywords(words) : []
         };
     }
 
@@ -59,7 +56,7 @@ class TextAnalyzer {
         return {
             words: 0, uniqueWords: 0, characters: 0,
             sentences: 0, paragraphs: 0, avgWordLength: '—',
-            readingTime: 0, fleschScore: 0, gradeLevel: '—', keywords: []
+            readingTime: 0, fleschScore: 0, keywords: []
         };
     }
 
@@ -117,16 +114,6 @@ class TextAnalyzer {
         return Math.max(0, Math.min(100, score));
     }
 
-    static getGradeLevel(score) {
-        if (score <= 0 || isNaN(score)) return '—';
-        if (score >= 90) return '5th Grade';
-        if (score >= 80) return '6th Grade';
-        if (score >= 70) return '7th Grade';
-        if (score >= 60) return '8th–9th';
-        if (score >= 50) return '10th–12th';
-        if (score >= 30) return 'College';
-        return 'Graduate';
-    }
 
     static extractKeywords(words, count = 7, minFrequency = 2) {
         const stopWords = new Set([
@@ -203,41 +190,7 @@ class TextFormatter {
             .join('\n');
     }
 
-    /**
-     * Toggles between straight quotes and curly (typographic) quotes.
-     * Detects which style is already in use and converts to the other.
-     */
-    static convertSmartQuotes(text) {
-        if (!text) return '';
-
-        const hasCurly = /[\u2018\u2019\u201C\u201D]/.test(text);
-
-        if (hasCurly) {
-            // Curly → straight
-            return text
-                .replace(/[\u2018\u2019]/g, "'")
-                .replace(/[\u201C\u201D]/g, '"');
-        }
-
-        // Straight → curly
-        return text
-            // Paired double quotes: "..." → "..."
-            .replace(/"([^"]*)"/g, '\u201C$1\u201D')
-            // Paired single quotes: '...' → '...'
-            .replace(/'([^']*)'/g, '\u2018$1\u2019')
-            // Remaining apostrophes in contractions (it's, don't, etc.)
-            .replace(/(\w)'(\w)/g, '$1\u2019$2')
-            // Opening double quotes after space or start
-            .replace(/(^|\s)"/g, '$1\u201C')
-            // Any remaining double quotes → closing
-            .replace(/"/g, '\u201D')
-            // Opening single quotes after space or start
-            .replace(/(^|\s)'/g, '$1\u2018')
-            // Any remaining single quotes → closing/apostrophe
-            .replace(/'/g, '\u2019');
-    }
-
-    // ─── SPACING OPERATIONS ─────────────────────────────────────
+    // ─── LINE OPERATIONS ─────────────────────────────────────
 
     /**
      * Puts each sentence on its own line.
@@ -279,23 +232,38 @@ class TextFormatter {
     }
 
     /**
-     * Collapses multiple consecutive spaces/tabs to a single space.
-     * Also trims each line.
+     * Trims leading and trailing whitespace from every line.
      */
-    static collapseSpaces(text) {
+    static trimLines(text) {
         if (!text) return '';
         return text
             .split('\n')
-            .map(line => line.replace(/[ \t]+/g, ' ').trim())
+            .map(line => line.trim())
+            .join('\n')
+            .trim();
+    }
+
+    /**
+     * Sorts all lines alphabetically (A → Z), case-insensitive.
+     * Preserves blank lines at their relative position relative to content.
+     */
+    static sortLinesAZ(text) {
+        if (!text) return '';
+        return text
+            .split('\n')
+            .sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase()))
             .join('\n');
     }
 
     /**
-     * Collapses 3+ consecutive blank lines to a single blank line.
+     * Removes all blank (empty or whitespace-only) lines from the text.
      */
-    static collapseBlankLines(text) {
+    static removeBlankLines(text) {
         if (!text) return '';
-        return text.replace(/\n{3,}/g, '\n\n').trim();
+        return text
+            .split('\n')
+            .filter(line => line.trim().length > 0)
+            .join('\n');
     }
 }
 

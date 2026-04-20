@@ -21,7 +21,6 @@ class TextyApp {
             activePreset:     null,
         };
 
-        this.MAX_TEXT_LENGTH   = 100_000;
         this.AUTOSAVE_INTERVAL = 30_000;
 
         this.autoSaveTimer  = null;
@@ -70,17 +69,19 @@ class TextyApp {
             // Toolbar — Format group
             stripFormatBtn:       $('stripFormatBtn'),
             removeDupesBtn:       $('removeDupesBtn'),
-            smartQuotesBtn:       $('smartQuotesBtn'),
             findReplaceToggleBtn: $('findReplaceToggleBtn'),
 
-            // Toolbar — Spacing group
+            // Toolbar — Lines group
             sentLineBtn:          $('sentLineBtn'),
             joinLinesBtn:         $('joinLinesBtn'),
-            collapseSpacesBtn:    $('collapseSpacesBtn'),
-            collapseBreaksBtn:    $('collapseBreaksBtn'),
+            sortAZBtn:            $('sortAZBtn'),
+            removeBlankLinesBtn:  $('removeBlankLinesBtn'),
 
             // Toolbar — Case group
             caseButtons:          document.querySelectorAll('[data-case]'),
+
+            // Toolbar — Clean group
+            trimLinesBtn:         $('trimLinesBtn'),
 
             // Find & Replace panel
             findReplacePanel:     $('findReplacePanel'),
@@ -189,22 +190,22 @@ class TextyApp {
             }
         });
 
-        // ── Toolbar: Format buttons ──
-        this.bindBtn('stripFormatBtn',       () => this.stripFormatting());
-        this.bindBtn('removeDupesBtn',       () => this.removeDuplicateLines());
-        this.bindBtn('smartQuotesBtn',       () => this.convertSmartQuotes());
-        this.bindBtn('findReplaceToggleBtn', () => this.toggleFindReplace());
-
-        // ── Toolbar: Spacing buttons ──
-        this.bindBtn('sentLineBtn',       () => this.sentencesPerLine());
-        this.bindBtn('joinLinesBtn',      () => this.joinLines());
-        this.bindBtn('collapseSpacesBtn', () => this.collapseSpaces());
-        this.bindBtn('collapseBreaksBtn', () => this.collapseBreaks());
-
         // ── Toolbar: Case buttons ──
         el.caseButtons?.forEach(btn => {
             btn.addEventListener('click', () => this.convertCase(btn.dataset.case));
         });
+
+        // ── Toolbar: Lines buttons ──
+        this.bindBtn('sentLineBtn',          () => this.sentencesPerLine());
+        this.bindBtn('joinLinesBtn',         () => this.joinLines());
+        this.bindBtn('sortAZBtn',            () => this.sortLinesAZ());
+        this.bindBtn('removeBlankLinesBtn',  () => this.removeBlankLines());
+
+        // ── Toolbar: Clean buttons ──
+        this.bindBtn('stripFormatBtn',       () => this.stripFormatting());
+        this.bindBtn('trimLinesBtn',         () => this.trimLines());
+        this.bindBtn('removeDupesBtn',       () => this.removeDuplicateLines());
+        this.bindBtn('findReplaceToggleBtn', () => this.toggleFindReplace());
 
         // ── Find & Replace ──
         el.findInput?.addEventListener('input', () => this.updateFindResults());
@@ -497,23 +498,24 @@ class TextyApp {
         const ctx = this.getSelectionContext();
         if (!ctx) return { applied: false, wasSelection: false };
 
-        let result = fn(ctx.target);
+        const transformed = fn(ctx.target);
+        let result   = transformed;
         let padStart = '';
-        let padEnd = '';
+        let padEnd   = '';
 
         if (isSpacing && ctx.hasSelection) {
             const before = ctx.fullText.substring(0, ctx.start);
             const after  = ctx.fullText.substring(ctx.end);
-            
+
             if (before.length > 0) {
-                if (!before.endsWith('\n')) padStart = '\n\n';
+                if (!before.endsWith('\n'))      padStart = '\n\n';
                 else if (!before.endsWith('\n\n')) padStart = '\n';
             }
             if (after.length > 0) {
-                if (!after.startsWith('\n')) padEnd = '\n\n';
+                if (!after.startsWith('\n'))      padEnd = '\n\n';
                 else if (!after.startsWith('\n\n')) padEnd = '\n';
             }
-            result = padStart + result + padEnd;
+            result = padStart + transformed + padEnd;
         }
 
         // Nothing changed — skip snapshot and DOM write
@@ -526,7 +528,7 @@ class TextyApp {
 
         // Restore cursor: keep selection if one existed, otherwise place cursor at end of result
         const newStart = ctx.start + (ctx.hasSelection ? padStart.length : 0);
-        const newEnd = newStart + fn(ctx.target).length;
+        const newEnd   = newStart + transformed.length;
         el.setSelectionRange(ctx.hasSelection ? newStart : newEnd, newEnd);
 
         el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -548,19 +550,13 @@ class TextyApp {
         else         this.showToast('No duplicate lines found');
     }
 
-    convertSmartQuotes() {
-        const { applied, wasSelection } = this.applyTransform(t => TextFormatter.convertSmartQuotes(t));
-        if (applied) this.showToast(wasSelection ? 'Quotes converted in selection' : 'Quotes converted');
-        else         this.showToast('No quotes found to convert');
-    }
-
     convertCase(caseType) {
         const { applied, wasSelection } = this.applyTransform(t => CaseConverter.convert(t, caseType));
         if (applied) this.showToast(wasSelection ? `Selection → ${caseType} case` : `Converted to ${caseType} case`);
     }
 
     // ─────────────────────────────────────────────
-    //  TEXT TRANSFORMS — Spacing
+    //  TEXT TRANSFORMS — Lines
     // ─────────────────────────────────────────────
     sentencesPerLine() {
         const { applied, wasSelection } = this.applyTransform(t => TextFormatter.sentencesPerLine(t), true);
@@ -574,16 +570,22 @@ class TextyApp {
         else         this.showToast('No hard line breaks to join');
     }
 
-    collapseSpaces() {
-        const { applied, wasSelection } = this.applyTransform(t => TextFormatter.collapseSpaces(t), true);
-        if (applied) this.showToast(wasSelection ? 'Spaces collapsed & separated' : 'Extra spaces collapsed');
-        else         this.showToast('No extra spaces found');
+    trimLines() {
+        const { applied, wasSelection } = this.applyTransform(t => TextFormatter.trimLines(t));
+        if (applied) this.showToast(wasSelection ? 'Lines trimmed in selection' : 'Lines trimmed');
+        else         this.showToast('Lines already trimmed');
     }
 
-    collapseBreaks() {
-        const { applied, wasSelection } = this.applyTransform(t => TextFormatter.collapseBlankLines(t), true);
-        if (applied) this.showToast(wasSelection ? 'Blank lines collapsed & separated' : 'Blank lines collapsed');
-        else         this.showToast('No excess blank lines found');
+    sortLinesAZ() {
+        const { applied, wasSelection } = this.applyTransform(t => TextFormatter.sortLinesAZ(t));
+        if (applied) this.showToast(wasSelection ? 'Selection sorted A → Z' : 'Lines sorted A → Z');
+        else         this.showToast('Nothing to sort');
+    }
+
+    removeBlankLines() {
+        const { applied, wasSelection } = this.applyTransform(t => TextFormatter.removeBlankLines(t));
+        if (applied) this.showToast(wasSelection ? 'Blank lines removed from selection' : 'Blank lines removed');
+        else         this.showToast('No blank lines found');
     }
 
     // ─────────────────────────────────────────────
@@ -778,10 +780,9 @@ class TextyApp {
         const isRegex     = this.elements.regexOpt?.checked;
 
         this.saveUndoSnapshot();
-        const text = this.elements.textInput.value;
-        this.elements.textInput.value = isRegex 
-            ? text.replace(regex, replaceText) 
-            : text.replace(regex, () => replaceText);
+        this.elements.textInput.value = isRegex
+            ? this.elements.textInput.value.replace(regex, replaceText)
+            : this.elements.textInput.value.replace(regex, () => replaceText);
 
         this.elements.textInput.dispatchEvent(new Event('input', { bubbles: true }));
 

@@ -24,106 +24,55 @@
         </div>
 
         <!-- ── TOOLBAR ──────────────────────────────────── -->
-        <div class="toolbar">
+        <div class="toolbar-wrap">
+            <div class="toolbar">
 
-            <div class="toolbar-group">
-                <span class="toolbar-group-label">Format</span>
-                <div class="toolbar-buttons">
+                <!-- Case group -->
+                <button class="btn btn-tool btn-case" data-case="sentence"
+                    id="caseSentenceBtn" data-tooltip="Sentence case">Aa</button>
 
-                    <button class="btn btn-tool" id="stripFormatBtn"
-                        title="Remove HTML tags, extra spaces and line breaks">
-                        <span class="btn-label">Strip</span>
-                        <span class="btn-desc">Remove formatting</span>
-                    </button>
+                <button class="btn btn-tool btn-case" data-case="lower"
+                    id="caseLowerBtn" data-tooltip="lowercase">ag</button>
 
-                    <button class="btn btn-tool" id="removeDupesBtn"
-                        title="Remove duplicate lines, keeping the first occurrence">
-                        <span class="btn-label">Remove Dupes</span>
-                        <span class="btn-desc">Delete duplicate lines</span>
-                    </button>
+                <button class="btn btn-tool btn-case" data-case="upper"
+                    id="caseUpperBtn" data-tooltip="UPPERCASE">AG</button>
 
-                    <button class="btn btn-tool" id="smartQuotesBtn"
-                        title="Toggle between straight quotes and curly (typographic) quotes">
-                        <span class="btn-label">Smart Quotes</span>
-                        <span class="btn-desc">Straight &harr; Curly</span>
-                    </button>
+                <button class="btn btn-tool btn-case" data-case="title"
+                    id="caseTitleBtn" data-tooltip="Title Case">Ab</button>
 
-                    <button class="btn btn-tool" id="findReplaceToggleBtn"
-                        title="Open Find &amp; Replace panel (Ctrl+H)">
-                        <span class="btn-label">Find &amp; Replace</span>
-                        <span class="btn-desc">Search &amp; substitute</span>
-                    </button>
+                <div class="toolbar-sep"></div>
 
-                </div>
+                <!-- Lines group -->
+                <button class="btn btn-tool" id="sentLineBtn"
+                    data-tooltip="Sent &rarr; Line">¶→</button>
+
+                <button class="btn btn-tool" id="joinLinesBtn"
+                    data-tooltip="Join Lines">←¶</button>
+
+                <button class="btn btn-tool" id="sortAZBtn"
+                    data-tooltip="Sort A → Z">A↕Z</button>
+
+                <button class="btn btn-tool" id="removeBlankLinesBtn"
+                    data-tooltip="Remove Blank Lines">⊟¶</button>
+
+                <div class="toolbar-sep"></div>
+
+                <!-- Clean group -->
+                <button class="btn btn-tool" id="stripFormatBtn"
+                    data-tooltip="Strip Formatting">⊗</button>
+
+                <button class="btn btn-tool" id="trimLinesBtn"
+                    data-tooltip="Trim Lines">⇤⇥</button>
+
+                <button class="btn btn-tool" id="removeDupesBtn"
+                    data-tooltip="No Duplicates">∅</button>
+
+                <button class="btn btn-tool" id="findReplaceToggleBtn"
+                    data-tooltip="Find &amp; Replace">⌕</button>
+
             </div>
+        </div><!-- /.toolbar-wrap -->
 
-            <div class="toolbar-divider"></div>
-
-            <div class="toolbar-group">
-                <span class="toolbar-group-label">Spacing</span>
-                <div class="toolbar-buttons">
-
-                    <button class="btn btn-tool" id="sentLineBtn"
-                        title="Put each sentence on its own line — great for proofreading">
-                        <span class="btn-label">Sent → Line</span>
-                        <span class="btn-desc">Each sentence on new line</span>
-                    </button>
-
-                    <button class="btn btn-tool" id="joinLinesBtn"
-                        title="Merge hard-wrapped lines back into paragraphs — fixes PDF copy-paste">
-                        <span class="btn-label">Join Lines</span>
-                        <span class="btn-desc">Merge hard line breaks</span>
-                    </button>
-
-                    <button class="btn btn-tool" id="collapseSpacesBtn"
-                        title="Replace multiple consecutive spaces and tabs with a single space">
-                        <span class="btn-label">Collapse Spaces</span>
-                        <span class="btn-desc">Multiple spaces → one</span>
-                    </button>
-
-                    <button class="btn btn-tool" id="collapseBreaksBtn"
-                        title="Collapse 3 or more consecutive blank lines down to one">
-                        <span class="btn-label">Collapse Breaks</span>
-                        <span class="btn-desc">Multiple blanks → one</span>
-                    </button>
-
-                </div>
-            </div>
-
-            <div class="toolbar-divider"></div>
-
-            <div class="toolbar-group">
-                <span class="toolbar-group-label">Case</span>
-                <div class="toolbar-buttons">
-
-                    <button class="btn btn-tool btn-case" data-case="sentence"
-                        title="Capitalise the first letter of each sentence">
-                        <span class="btn-label">Sentence</span>
-                        <span class="btn-desc">First letter caps</span>
-                    </button>
-
-                    <button class="btn btn-tool btn-case" data-case="lower"
-                        title="Convert all text to lowercase">
-                        <span class="btn-label">lowercase</span>
-                        <span class="btn-desc">All letters lower</span>
-                    </button>
-
-                    <button class="btn btn-tool btn-case" data-case="upper"
-                        title="Convert all text to uppercase">
-                        <span class="btn-label">UPPERCASE</span>
-                        <span class="btn-desc">All letters upper</span>
-                    </button>
-
-                    <button class="btn btn-tool btn-case" data-case="title"
-                        title="Capitalise the first letter of each word">
-                        <span class="btn-label">Title Case</span>
-                        <span class="btn-desc">Each word capped</span>
-                    </button>
-
-                </div>
-            </div>
-
-        </div><!-- /.toolbar -->
 
         <!-- ── FIND & REPLACE PANEL ─────────────────────── -->
         <div class="find-replace-panel" id="findReplacePanel" aria-hidden="true">

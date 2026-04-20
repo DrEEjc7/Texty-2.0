@@ -122,42 +122,29 @@ body {
 }
 
 /* ─── TOOLBAR ────────────────────────────────── */
+.toolbar-wrap {
+    margin-bottom: var(--sp-6);
+}
+
+/* Framed pill container — no overflow so tooltips can escape upward */
 .toolbar {
     display: flex;
-    flex-direction: column;
-    gap: var(--sp-3);
-    margin-bottom: var(--sp-6);
-    padding-bottom: var(--sp-5);
-    border-bottom: 1px solid var(--border);
+    align-items: center;
+    gap: 2px;
+    padding: 4px 6px;
+    background: var(--bg-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    flex-wrap: wrap; /* graceful on very narrow screens */
 }
 
-.toolbar-group {
-    display: flex;
-    align-items: flex-start;
-    gap: var(--sp-4);
-}
-
-.toolbar-group-label {
-    font-size: 0.62rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--text-3);
-    padding-top: 0.7rem;
-    white-space: nowrap;
-    min-width: 38px;
-    flex-shrink: 0;
-}
-
-.toolbar-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-2);
-}
-
-.toolbar-divider {
-    height: 1px;
+.toolbar-sep {
+    width: 1px;
+    height: 16px;
     background: var(--border);
+    flex-shrink: 0;
+    margin: 0 var(--sp-1);
+    border-radius: 1px;
 }
 
 /* ─── BUTTONS ────────────────────────────────── */
@@ -229,40 +216,78 @@ body {
     min-height: 28px;
 }
 
-/* Tool buttons — 2-line: label + description */
+/* Tool buttons — compact symbol pills */
 .btn-tool {
-    flex-direction: column;
-    align-items: flex-start;
-    padding: 0.4rem 0.65rem;
-    min-height: 48px;
-    min-width: 90px;
-    gap: 0.1rem;
-    background: var(--bg);
-    border-color: var(--border);
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.6rem;
+    height: 28px;
+    min-height: unset;
+    min-width: 32px;
+    gap: 0;
+    font-size: 0.8rem;
+    font-family: var(--ff-mono);
+    font-weight: 500;
+    border-radius: 5px;
+    flex-shrink: 0;
+    letter-spacing: 0;
+    background: transparent;
+    border-color: transparent;
+    color: var(--text-2);
+    transition: background var(--ease), border-color var(--ease), color var(--ease);
+    position: relative; /* for tooltip */
 }
 
 .btn-tool:hover:not(:disabled) {
-    background: var(--bg-raised);
-    border-color: var(--text);
+    background: var(--bg);
+    border-color: var(--border);
+    color: var(--text);
+    transform: none;
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-tool:active:not(:disabled) {
+    transform: scale(0.93);
+    opacity: 0.75;
 }
 
 .btn-tool.panel-open {
-    background: var(--bg-raised);
-    border-color: var(--text);
-}
-
-.btn-label {
-    font-size: 0.78rem;
-    font-weight: 600;
+    background: var(--bg);
+    border-color: var(--border);
     color: var(--text);
-    line-height: 1.25;
 }
 
-.btn-desc {
-    font-size: 0.62rem;
-    font-weight: 400;
-    color: var(--text-3);
-    line-height: 1.2;
+/* ─── CSS TOOLTIP (data-tooltip) ───────────────────── */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 7px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background: var(--text);
+    color: var(--text-inv);
+    font-family: var(--ff-sans);
+    font-size: 0.68rem;
+    font-weight: 500;
+    white-space: nowrap;
+    padding: 3px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s ease, transform 0.12s ease;
+    z-index: 50;
+    letter-spacing: 0.01em;
+}
+
+[data-tooltip]:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    transition-delay: 0.2s, 0.2s;
 }
 
 /* ─── FIND & REPLACE PANEL ───────────────────── */
@@ -1015,15 +1040,7 @@ kbd {
         padding: var(--sp-6) var(--sp-4);
     }
 
-    .toolbar-group {
-        flex-direction: column;
-        gap: var(--sp-1);
-    }
-
-    .toolbar-group-label {
-        min-width: unset;
-        padding-top: 0;
-    }
+    /* toolbar scrolls horizontally on small screens */
 
     .find-replace-fields {
         grid-template-columns: 1fr;
@@ -1053,9 +1070,7 @@ kbd {
         min-height: 220px;
     }
 
-    .btn-tool {
-        min-width: 78px;
-    }
+    /* btn-tool already adapts via content width on mobile */
 
     .action-bar {
         flex-direction: column;
